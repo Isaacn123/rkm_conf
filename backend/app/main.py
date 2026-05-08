@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import mysql.connector
+import requests
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
@@ -14,6 +15,71 @@ MYSQL_USER = os.getenv("MYSQL_USER", "rkmconf")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "rkmconf_password")
 
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
+BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "RKMConf")
+ADMIN_NOTIFY_EMAIL = os.getenv("ADMIN_NOTIFY_EMAIL", "church@robertkayanjaministries.ug")
+
+
+def _brevo_send_email(*, to_email: str, to_name: str, subject: str, html: str) -> None:
+    if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
+        return
+
+    resp = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={
+            "api-key": BREVO_API_KEY,
+            "accept": "application/json",
+            "content-type": "application/json",
+        },
+        json={
+            "sender": {"email": BREVO_SENDER_EMAIL, "name": BREVO_SENDER_NAME},
+            "to": [{"email": to_email, "name": to_name}],
+            "subject": subject,
+            "htmlContent": html,
+        },
+        timeout=15,
+    )
+    if resp.status_code >= 400:
+        raise RuntimeError(f"Brevo send failed: {resp.status_code}")
+
+
+def _format_admin_email(*, payload: "FormSubmission") -> str:
+    invitation = "Yes" if payload.invitationLetter == "yes" else "No"
+    passport = (payload.passport or "").strip()
+    passport_html = passport if passport else "<em>(not provided)</em>"
+    return f"""
+      <div style="font-family:Arial,sans-serif;line-height:1.5">
+        <h2>New RKMConf form submission</h2>
+        <p><strong>Name:</strong> {payload.fname.strip()} {payload.lname.strip()}</p>
+        <p><strong>Email:</strong> {payload.email.strip().lower()}</p>
+        <p><strong>Phone:</strong> {payload.phoneCountry.strip().upper()} {payload.phone.strip()}</p>
+        <p><strong>Days in attendance:</strong> {payload.daysAttendance.strip()}</p>
+        <p><strong>Passport:</strong> {passport_html}</p>
+        <p><strong>Invitation letter required:</strong> {invitation}</p>
+        <p><strong>Message:</strong><br />{payload.message.strip().replace("\n", "<br />")}</p>
+      </div>
+    """
+
+
+def _format_visitor_email(*, payload: "FormSubmission") -> str:
+    invitation = "Yes" if payload.invitationLetter == "yes" else "No"
+    return f"""
+      <div style="font-family:Arial,sans-serif;line-height:1.5">
+        <p>Hello {payload.fname.strip()},</p>
+        <p>Thank you for registering for RKMConf. We’ve received your submission.</p>
+        <h3>Summary</h3>
+        <ul>
+          <li><strong>Name:</strong> {payload.fname.strip()} {payload.lname.strip()}</li>
+          <li><strong>Email:</strong> {payload.email.strip().lower()}</li>
+          <li><strong>Phone:</strong> {payload.phoneCountry.strip().upper()} {payload.phone.strip()}</li>
+          <li><strong>Days in attendance:</strong> {payload.daysAttendance.strip()}</li>
+          <li><strong>Invitation letter required:</strong> {invitation}</li>
+        </ul>
+        <p>If you need to update any details, please reply to this email.</p>
+      </div>
+    """
 
 
 def get_conn() -> mysql.connector.MySQLConnection:
@@ -75,7 +141,7 @@ class FormSubmission(BaseModel):
     lname: str = Field(min_length=1, max_length=100)
     email: EmailStr
     passport: str | None = Field(default=None, max_length=32)
-    invitationLetter: str = Field(pattern="^(yes|no)$")
+    invitationLetter: str | None = Field(default=None, pattern="^(yes|no)$")
     phoneCountry: str = Field(min_length=2, max_length=2, description="ISO 2 country code")
     phone: str = Field(min_length=3, max_length=40)
     message: str = Field(min_length=1, max_length=5000)
@@ -121,6 +187,25 @@ def submit(payload: FormSubmission) -> dict[str, Any]:
                 ),
             )
             cur.close()
+
+        # Send notifications (non-blocking for persistence: failures won't reject submission)
+        try:
+            if ADMIN_NOTIFY_EMAIL:
+                _brevo_send_email(
+                    to_email=ADMIN_NOTIFY_EMAIL,
+                    to_name="Admin",
+                    subject="New RKMConf submission",
+                    html=_format_admin_email(payload=payload),
+                )
+            _brevo_send_email(
+                to_email=payload.email.strip().lower(),
+                to_name=f"{payload.fname.strip()} {payload.lname.strip()}".strip(),
+                subject="RKMConf: We received your submission",
+                html=_format_visitor_email(payload=payload),
+            )
+        except Exception:
+            pass
+
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to save submission") from e

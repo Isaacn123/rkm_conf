@@ -7372,7 +7372,7 @@
         <div class="field-list">
           <fieldset class="form-item fields name" id="name-2d711c57-5139-45ca-94d5-2cde83363545">
             <legend id="name-2d711c57-5139-45ca-94d5-2cde83363545-field-wrapper">
-              <div class="title"><span>Name</span></div>
+              <div><span>Name</span></div>
             </legend>
             <div class="field first-name">
               <label class="caption" for="name-2d711c57-5139-45ca-94d5-2cde83363545-fname-field">
@@ -7402,20 +7402,23 @@
             <input id="passport-field-input" name="passport" type="text" autocomplete="off" placeholder="e.g. A1234567" />
           </div>
 
-          <div class="form-item field required" id="invitation-letter">
+          <div class="form-item field" id="invitation-letter">
             <label for="invitation-letter-field" class="title">
-              <span>Would you require an invitation letter?</span><span class="description required"> (required)</span>
+              <span>Would you require an invitation letter?</span>
             </label>
-            <select id="invitation-letter-field" name="invitationLetter" required>
+            <select id="invitation-letter-field" name="invitationLetter">
               <option value="" selected disabled>Select…</option>
               <option value="no">No</option>
               <option value="yes">Yes</option>
             </select>
+            <p class="" style="font-size: 13px; color: #666;">
+              Note: This is mainly for international visitors who may require a visa/invitation letter.
+            </p>
           </div>
 
           <fieldset class="form-item fields phone" id="phone-9c38c785-eb60-4c82-a31d-e39af15d0b78">
             <legend id="phone-9c38c785-eb60-4c82-a31d-e39af15d0b78-field-wrapper">
-              <div class="title"><span>Phone</span><span class="description required"> (required)</span></div>
+              <div class="title"><span>Phone</span><span class="required"> (required)</span></div>
             </legend>
             <div class="field">
               <label class="caption" for="phone-9c38c785-eb60-4c82-a31d-e39af15d0b78-country-code-field">
@@ -7504,7 +7507,7 @@
                 lname: form.querySelector('[name=\"lname\"]').value.trim(),
                 email: form.querySelector('[name=\"email\"]').value.trim(),
                 passport: (form.querySelector('[name=\"passport\"]').value || '').trim() || null,
-                invitationLetter: form.querySelector('[name=\"invitationLetter\"]').value,
+                invitationLetter: form.querySelector('[name=\"invitationLetter\"]').value || null,
                 phoneCountry: form.querySelector('[name=\"phoneCountry\"]').value,
                 phone: form.querySelector('[name=\"phone\"]').value.trim(),
                 message: form.querySelector('[name=\"message\"]').value.trim(),
