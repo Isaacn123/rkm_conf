@@ -7522,6 +7522,8 @@
             dialog.style.padding = "16px 16px 14px";
             dialog.style.boxShadow = "0 18px 60px rgba(0,0,0,.25)";
             dialog.style.border = "1px solid rgba(0,0,0,.08)";
+            dialog.style.setProperty("color", "#111827", "important");
+            dialog.style.setProperty("-webkit-text-fill-color", "#111827", "important");
 
             const top = document.createElement("div");
             top.style.display = "flex";
@@ -7534,6 +7536,8 @@
             title.style.fontWeight = "700";
             title.style.fontSize = "16px";
             title.style.lineHeight = "1.2";
+            title.style.setProperty("color", "#111827", "important");
+            title.style.setProperty("-webkit-text-fill-color", "#111827", "important");
             title.textContent = "Submitted";
 
             const closeBtn = document.createElement("button");
@@ -7547,12 +7551,16 @@
             closeBtn.style.cursor = "pointer";
             closeBtn.style.padding = "8px";
             closeBtn.style.margin = "-8px";
+            closeBtn.style.setProperty("color", "#374151", "important");
+            closeBtn.style.setProperty("-webkit-text-fill-color", "#374151", "important");
 
             const body = document.createElement("div");
             body.id = "rkmconf-form-popup-body";
             body.style.marginTop = "10px";
             body.style.fontSize = "14px";
             body.style.lineHeight = "1.45";
+            body.style.setProperty("color", "#1f2937", "important");
+            body.style.setProperty("-webkit-text-fill-color", "#1f2937", "important");
             body.textContent = "Thank you! We received your submission.";
 
             const actions = document.createElement("div");
@@ -7570,7 +7578,8 @@
             okBtn.style.cursor = "pointer";
             okBtn.style.fontWeight = "600";
             okBtn.style.background = "rgba(0,200,120,.12)";
-            okBtn.style.color = "rgba(0,120,70,1)";
+            okBtn.style.setProperty("color", "rgb(0, 120, 70)", "important");
+            okBtn.style.setProperty("-webkit-text-fill-color", "rgb(0, 120, 70)", "important");
 
             top.appendChild(title);
             top.appendChild(closeBtn);
@@ -7606,7 +7615,16 @@
             if (body) body.textContent = message;
             if (okBtn) {
               okBtn.style.background = ok ? "rgba(0,200,120,.12)" : "rgba(255,80,80,.12)";
-              okBtn.style.color = ok ? "rgba(0,120,70,1)" : "rgba(150,30,30,1)";
+              okBtn.style.setProperty(
+                "color",
+                ok ? "rgb(0, 120, 70)" : "rgb(150, 30, 30)",
+                "important"
+              );
+              okBtn.style.setProperty(
+                "-webkit-text-fill-color",
+                ok ? "rgb(0, 120, 70)" : "rgb(150, 30, 30)",
+                "important"
+              );
             }
 
             wrap.style.display = "flex";

@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime, timezone
+from html import escape
 from typing import Any
 
 import mysql.connector
@@ -23,6 +24,63 @@ BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "RKMConf")
 ADMIN_NOTIFY_EMAIL = os.getenv("ADMIN_NOTIFY_EMAIL", "church@robertkayanjaministries.ug")
 
 logger = logging.getLogger(__name__)
+
+
+def _escape_line(s: str) -> str:
+    return escape((s or "").strip(), quote=False)
+
+
+def _escape_multiline(s: str) -> str:
+    return escape((s or "").strip(), quote=False).replace("\n", "<br />")
+
+
+def _format_utc_timestamp(dt: datetime) -> str:
+    """Human-readable UTC label for naive UTC datetimes stored from submit()."""
+    return dt.strftime("%d %B %Y, %H:%M UTC")
+
+
+def _email_layout(*, header_subtitle: str, body_html: str, footer_html: str) -> str:
+    sub = escape(header_subtitle, quote=False)
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f4f6;padding:28px 14px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+        <tr>
+          <td style="background:#1e293b;padding:22px 28px;border-bottom:3px solid #0f172a;">
+            <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:600;color:#f8fafc;letter-spacing:.02em;">RKMConf</p>
+            <p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;line-height:1.45;">{sub}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 28px 8px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#111827;">
+            {body_html}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 28px 26px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.55;color:#6b7280;border-top:1px solid #f3f4f6;background:#fafafa;">
+            {footer_html}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>"""
+
+
+def _detail_row(label: str, value_html: str) -> str:
+    lab = escape(label, quote=False)
+    return f"""<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 12px;">
+  <tr>
+    <td style="padding:10px 0 10px 0;border-bottom:1px solid #eef0f3;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;width:38%;vertical-align:top;">{lab}</td>
+    <td style="padding:10px 0 10px 16px;border-bottom:1px solid #eef0f3;font-size:14px;color:#111827;vertical-align:top;">{value_html}</td>
+  </tr>
+</table>"""
 
 
 def _brevo_send_email(*, to_email: str, to_name: str, subject: str, html: str) -> bool:
@@ -49,41 +107,103 @@ def _brevo_send_email(*, to_email: str, to_name: str, subject: str, html: str) -
     return True
 
 
-def _format_admin_email(*, payload: "FormSubmission") -> str:
+def _format_admin_email(*, payload: "FormSubmission", submitted_at_utc: datetime) -> str:
     invitation = "Yes" if payload.invitationLetter == "yes" else "No"
-    passport = (payload.passport or "").strip()
-    passport_html = passport if passport else "<em>(not provided)</em>"
-    return f"""
-      <div style="font-family:Arial,sans-serif;line-height:1.5">
-        <h2>New RKMConf form submission</h2>
-        <p><strong>Name:</strong> {payload.fname.strip()} {payload.lname.strip()}</p>
-        <p><strong>Email:</strong> {payload.email.strip().lower()}</p>
-        <p><strong>Phone:</strong> {payload.phoneCountry.strip().upper()} {payload.phone.strip()}</p>
-        <p><strong>Days in attendance:</strong> {payload.daysAttendance.strip()}</p>
-        <p><strong>Passport:</strong> {passport_html}</p>
-        <p><strong>Invitation letter required:</strong> {invitation}</p>
-        <p><strong>Message:</strong><br />{payload.message.strip().replace("\n", "<br />")}</p>
-      </div>
-    """
+    passport_raw = (payload.passport or "").strip()
+    passport_html = _escape_line(passport_raw) if passport_raw else '<span style="color:#94a3b8;font-style:italic;">Not provided</span>'
+
+    phone_disp = f"{_escape_line(payload.phoneCountry.strip().upper())} {_escape_line(payload.phone.strip())}"
+    full_name = f"{_escape_line(payload.fname)} {_escape_line(payload.lname)}"
+    email_raw = payload.email.strip().lower()
+    email_disp = _escape_line(email_raw)
+    days_disp = _escape_line(payload.daysAttendance.strip())
+    msg_html = _escape_multiline(payload.message)
+    ts = escape(_format_utc_timestamp(submitted_at_utc), quote=False)
+
+    details = "".join(
+        [
+            _detail_row("Received (UTC)", ts),
+            _detail_row("Full name", full_name),
+            _detail_row(
+                "Email",
+                f'<a href="mailto:{email_raw}" style="color:#1d4ed8;text-decoration:none;">{email_disp}</a>',
+            ),
+            _detail_row("Phone", phone_disp),
+            _detail_row("Days attending", days_disp),
+            _detail_row("Passport number", passport_html),
+            _detail_row("Invitation letter", escape(invitation, quote=False)),
+        ]
+    )
+
+    body = f"""
+<p style="margin:0 0 20px;font-size:15px;color:#111827;">
+  A new registration has been submitted through the RKMConf website form. Please review the details below and follow up as appropriate.
+</p>
+{details}
+<p style="margin:22px 0 8px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Additional message</p>
+<div style="margin:0;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;color:#1e293b;line-height:1.6;">
+  {msg_html}
+</div>
+"""
+
+    footer = """
+<p style="margin:0 0 8px;">This is an automated notice sent to the conference administration mailbox.</p>
+<p style="margin:0;">Please do not forward externally if the contents include personal data.</p>
+"""
+    return _email_layout(
+        header_subtitle="New registration — internal notice",
+        body_html=body,
+        footer_html=footer,
+    )
 
 
-def _format_visitor_email(*, payload: "FormSubmission") -> str:
+def _format_visitor_email(*, payload: "FormSubmission", submitted_at_utc: datetime) -> str:
     invitation = "Yes" if payload.invitationLetter == "yes" else "No"
-    return f"""
-      <div style="font-family:Arial,sans-serif;line-height:1.5">
-        <p>Hello {payload.fname.strip()},</p>
-        <p>Thank you for registering for RKMConf. We’ve received your submission.</p>
-        <h3>Summary</h3>
-        <ul>
-          <li><strong>Name:</strong> {payload.fname.strip()} {payload.lname.strip()}</li>
-          <li><strong>Email:</strong> {payload.email.strip().lower()}</li>
-          <li><strong>Phone:</strong> {payload.phoneCountry.strip().upper()} {payload.phone.strip()}</li>
-          <li><strong>Days in attendance:</strong> {payload.daysAttendance.strip()}</li>
-          <li><strong>Invitation letter required:</strong> {invitation}</li>
-        </ul>
-        <p>If you need to update any details, please reply to this email.</p>
-      </div>
-    """
+    first = _escape_line(payload.fname)
+    full_name = f"{_escape_line(payload.fname)} {_escape_line(payload.lname)}"
+    email_disp = _escape_line(payload.email.strip().lower())
+    phone_disp = f"{_escape_line(payload.phoneCountry.strip().upper())} {_escape_line(payload.phone.strip())}"
+    days_disp = _escape_line(payload.daysAttendance.strip())
+
+    details = "".join(
+        [
+            _detail_row("Name", full_name),
+            _detail_row("Email", email_disp),
+            _detail_row("Phone", phone_disp),
+            _detail_row("Days attending", days_disp),
+            _detail_row("Invitation letter requested", escape(invitation, quote=False)),
+        ]
+    )
+
+    body = f"""
+<p style="margin:0 0 14px;font-size:15px;color:#111827;">Dear {first},</p>
+<p style="margin:0 0 16px;font-size:15px;color:#374151;">
+  Thank you for submitting your registration details for <strong style="color:#111827;">RKMConf</strong>.
+  We have received your information securely and will retain it for conference planning and correspondence.
+</p>
+<p style="margin:0 0 22px;font-size:15px;color:#374151;">
+  If any of the details below need to be corrected, please reply to this email and our team will assist you.
+</p>
+<p style="margin:0 0 12px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Your submission summary</p>
+{details}
+<p style="margin:22px 0 0;font-size:13px;color:#64748b;line-height:1.55;">
+  Submitted: {_escape_line(_format_utc_timestamp(submitted_at_utc))}
+</p>
+<p style="margin:24px 0 0;font-size:15px;color:#111827;">
+  Kind regards,<br/>
+  <span style="color:#374151;">The RKMConf team</span>
+</p>
+"""
+
+    footer = """
+<p style="margin:0 0 8px;">You received this email because you completed the registration form on the RKMConf website.</p>
+<p style="margin:0;">If you did not submit this request, please disregard this message or contact us using the details on our official site.</p>
+"""
+    return _email_layout(
+        header_subtitle="Registration confirmation",
+        body_html=body,
+        footer_html=footer,
+    )
 
 
 def get_conn() -> mysql.connector.MySQLConnection:
@@ -204,8 +324,8 @@ def submit(payload: FormSubmission) -> dict[str, Any]:
                     _brevo_send_email(
                         to_email=ADMIN_NOTIFY_EMAIL,
                         to_name="Admin",
-                        subject="New RKMConf submission",
-                        html=_format_admin_email(payload=payload),
+                        subject="RKMConf — New registration submitted",
+                        html=_format_admin_email(payload=payload, submitted_at_utc=created_at),
                     )
                 except Exception:
                     logger.exception("Admin notification email failed")
@@ -213,8 +333,8 @@ def submit(payload: FormSubmission) -> dict[str, Any]:
                 confirmation_email_sent = _brevo_send_email(
                     to_email=payload.email.strip().lower(),
                     to_name=f"{payload.fname.strip()} {payload.lname.strip()}".strip(),
-                    subject="RKMConf: We received your submission",
-                    html=_format_visitor_email(payload=payload),
+                    subject="RKMConf — Registration received",
+                    html=_format_visitor_email(payload=payload, submitted_at_utc=created_at),
                 )
             except Exception:
                 logger.exception("Visitor confirmation email failed")
