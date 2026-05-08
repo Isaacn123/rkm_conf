@@ -38,6 +38,8 @@ def init_db() -> None:
               fname VARCHAR(100) NOT NULL,
               lname VARCHAR(100) NOT NULL,
               email VARCHAR(320) NOT NULL,
+              passport VARCHAR(32) NULL,
+              invitation_letter TINYINT(1) NOT NULL DEFAULT 0,
               phone_country CHAR(2) NOT NULL,
               phone VARCHAR(40) NOT NULL,
               message TEXT NOT NULL,
@@ -48,6 +50,23 @@ def init_db() -> None:
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """
         )
+
+        # Lightweight migration for existing DBs
+        cur.execute(
+            """
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'submissions'
+            """,
+            (MYSQL_DB,),
+        )
+        existing = {row[0] for row in cur.fetchall()}
+        if "passport" not in existing:
+            cur.execute("ALTER TABLE submissions ADD COLUMN passport VARCHAR(32) NULL;")
+        if "invitation_letter" not in existing:
+            cur.execute(
+                "ALTER TABLE submissions ADD COLUMN invitation_letter TINYINT(1) NOT NULL DEFAULT 0;"
+            )
         cur.close()
 
 
@@ -55,6 +74,8 @@ class FormSubmission(BaseModel):
     fname: str = Field(min_length=1, max_length=100)
     lname: str = Field(min_length=1, max_length=100)
     email: EmailStr
+    passport: str | None = Field(default=None, max_length=32)
+    invitationLetter: str = Field(pattern="^(yes|no)$")
     phoneCountry: str = Field(min_length=2, max_length=2, description="ISO 2 country code")
     phone: str = Field(min_length=3, max_length=40)
     message: str = Field(min_length=1, max_length=5000)
@@ -83,14 +104,16 @@ def submit(payload: FormSubmission) -> dict[str, Any]:
             cur.execute(
                 """
                 INSERT INTO submissions
-                (created_at, fname, lname, email, phone_country, phone, message, days_attendance)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                (created_at, fname, lname, email, passport, invitation_letter, phone_country, phone, message, days_attendance)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     created_at,
                     payload.fname.strip(),
                     payload.lname.strip(),
                     payload.email.strip().lower(),
+                    (payload.passport.strip() if payload.passport else None),
+                    (1 if payload.invitationLetter == "yes" else 0),
                     payload.phoneCountry.strip().upper(),
                     payload.phone.strip(),
                     payload.message.strip(),
@@ -118,7 +141,7 @@ def list_submissions(
         cur = conn.cursor(dictionary=True)
         cur.execute(
             """
-            SELECT id, created_at, fname, lname, email, phone_country, phone, message, days_attendance
+            SELECT id, created_at, fname, lname, email, passport, invitation_letter, phone_country, phone, message, days_attendance
             FROM submissions
             ORDER BY id DESC
             LIMIT %s

@@ -7395,6 +7395,24 @@
             <input aria-required="true" id="email-b71c4131-7617-4fc2-a341-f156fa05f395-field" name="email" type="email" required />
           </div>
 
+          <div class="form-item field" id="passport-field">
+            <label for="passport-field-input" class="title">
+              <span>Passport Number</span><span class="description">(optional)</span>
+            </label>
+            <input id="passport-field-input" name="passport" type="text" autocomplete="off" placeholder="e.g. A1234567" />
+          </div>
+
+          <div class="form-item field required" id="invitation-letter">
+            <label for="invitation-letter-field" class="title">
+              <span>Would you require an invitation letter?</span><span class="description required"> (required)</span>
+            </label>
+            <select id="invitation-letter-field" name="invitationLetter" required>
+              <option value="" selected disabled>Select…</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+
           <fieldset class="form-item fields phone" id="phone-9c38c785-eb60-4c82-a31d-e39af15d0b78">
             <legend id="phone-9c38c785-eb60-4c82-a31d-e39af15d0b78-field-wrapper">
               <div class="title"><span>Phone</span><span class="description required"> (required)</span></div>
@@ -7485,6 +7503,8 @@
                 fname: form.querySelector('[name=\"fname\"]').value.trim(),
                 lname: form.querySelector('[name=\"lname\"]').value.trim(),
                 email: form.querySelector('[name=\"email\"]').value.trim(),
+                passport: (form.querySelector('[name=\"passport\"]').value || '').trim() || null,
+                invitationLetter: form.querySelector('[name=\"invitationLetter\"]').value,
                 phoneCountry: form.querySelector('[name=\"phoneCountry\"]').value,
                 phone: form.querySelector('[name=\"phone\"]').value.trim(),
                 message: form.querySelector('[name=\"message\"]').value.trim(),
