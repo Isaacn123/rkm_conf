@@ -7490,11 +7490,141 @@
             msg.style.background = ok ? "rgba(0,200,120,.08)" : "rgba(255,80,80,.08)";
           }
 
+          function ensurePopup() {
+            const existing = document.getElementById("rkmconf-form-popup");
+            if (existing) return existing;
+
+            const wrap = document.createElement("div");
+            wrap.id = "rkmconf-form-popup";
+            wrap.setAttribute("aria-hidden", "true");
+            wrap.style.position = "fixed";
+            wrap.style.inset = "0";
+            wrap.style.display = "none";
+            wrap.style.alignItems = "center";
+            wrap.style.justifyContent = "center";
+            wrap.style.padding = "18px";
+            wrap.style.zIndex = "2147483647";
+
+            const overlay = document.createElement("div");
+            overlay.setAttribute("data-overlay", "1");
+            overlay.style.position = "absolute";
+            overlay.style.inset = "0";
+            overlay.style.background = "rgba(0,0,0,.45)";
+            overlay.style.backdropFilter = "blur(2px)";
+
+            const dialog = document.createElement("div");
+            dialog.setAttribute("role", "dialog");
+            dialog.setAttribute("aria-modal", "true");
+            dialog.style.position = "relative";
+            dialog.style.width = "min(520px, 100%)";
+            dialog.style.background = "#fff";
+            dialog.style.borderRadius = "14px";
+            dialog.style.padding = "16px 16px 14px";
+            dialog.style.boxShadow = "0 18px 60px rgba(0,0,0,.25)";
+            dialog.style.border = "1px solid rgba(0,0,0,.08)";
+
+            const top = document.createElement("div");
+            top.style.display = "flex";
+            top.style.alignItems = "center";
+            top.style.justifyContent = "space-between";
+            top.style.gap = "12px";
+
+            const title = document.createElement("div");
+            title.id = "rkmconf-form-popup-title";
+            title.style.fontWeight = "700";
+            title.style.fontSize = "16px";
+            title.style.lineHeight = "1.2";
+            title.textContent = "Submitted";
+
+            const closeBtn = document.createElement("button");
+            closeBtn.type = "button";
+            closeBtn.setAttribute("aria-label", "Close");
+            closeBtn.textContent = "✕";
+            closeBtn.style.border = "0";
+            closeBtn.style.background = "transparent";
+            closeBtn.style.fontSize = "18px";
+            closeBtn.style.lineHeight = "1";
+            closeBtn.style.cursor = "pointer";
+            closeBtn.style.padding = "8px";
+            closeBtn.style.margin = "-8px";
+
+            const body = document.createElement("div");
+            body.id = "rkmconf-form-popup-body";
+            body.style.marginTop = "10px";
+            body.style.fontSize = "14px";
+            body.style.lineHeight = "1.45";
+            body.textContent = "Thank you! We received your submission.";
+
+            const actions = document.createElement("div");
+            actions.style.display = "flex";
+            actions.style.justifyContent = "flex-end";
+            actions.style.marginTop = "14px";
+
+            const okBtn = document.createElement("button");
+            okBtn.type = "button";
+            okBtn.id = "rkmconf-form-popup-ok";
+            okBtn.textContent = "OK";
+            okBtn.style.border = "0";
+            okBtn.style.borderRadius = "10px";
+            okBtn.style.padding = "10px 14px";
+            okBtn.style.cursor = "pointer";
+            okBtn.style.fontWeight = "600";
+            okBtn.style.background = "rgba(0,200,120,.12)";
+            okBtn.style.color = "rgba(0,120,70,1)";
+
+            top.appendChild(title);
+            top.appendChild(closeBtn);
+            actions.appendChild(okBtn);
+            dialog.appendChild(top);
+            dialog.appendChild(body);
+            dialog.appendChild(actions);
+            wrap.appendChild(overlay);
+            wrap.appendChild(dialog);
+            document.body.appendChild(wrap);
+
+            function hide() {
+              wrap.style.display = "none";
+              wrap.setAttribute("aria-hidden", "true");
+            }
+
+            overlay.addEventListener("click", hide);
+            closeBtn.addEventListener("click", hide);
+            okBtn.addEventListener("click", hide);
+            document.addEventListener("keydown", function (ev) {
+              if (wrap.style.display !== "none" && ev.key === "Escape") hide();
+            });
+
+            return wrap;
+          }
+
+          function showPopup(message, ok) {
+            const wrap = ensurePopup();
+            const title = wrap.querySelector("#rkmconf-form-popup-title");
+            const body = wrap.querySelector("#rkmconf-form-popup-body");
+            const okBtn = wrap.querySelector("#rkmconf-form-popup-ok");
+            if (title) title.textContent = ok ? "Submitted" : "Error";
+            if (body) body.textContent = message;
+            if (okBtn) {
+              okBtn.style.background = ok ? "rgba(0,200,120,.12)" : "rgba(255,80,80,.12)";
+              okBtn.style.color = ok ? "rgba(0,120,70,1)" : "rgba(150,30,30,1)";
+            }
+
+            wrap.style.display = "flex";
+            wrap.setAttribute("aria-hidden", "false");
+
+            window.clearTimeout(showPopup._t);
+            showPopup._t = window.setTimeout(function () {
+              wrap.style.display = "none";
+              wrap.setAttribute("aria-hidden", "true");
+            }, 4500);
+          }
+
           form.addEventListener("submit", async function (e) {
             e.preventDefault();
 
             if (!form.checkValidity()) {
               setMessage("<p>Please fill out all required fields correctly.</p>", false);
+              showPopup("Please fill out all required fields correctly.", false);
               return;
             }
 
@@ -7520,14 +7650,35 @@
                 body: JSON.stringify(body),
               });
 
+              const data = await res.json().catch(function () {
+                return {};
+              });
+
               if (!res.ok) {
-                throw new Error('Submit failed');
+                var errDetail = data.detail;
+                var errMsg = 'Submit failed';
+                if (typeof errDetail === 'string') errMsg = errDetail;
+                else if (Array.isArray(errDetail) && errDetail.length)
+                  errMsg = errDetail.map(function (x) { return x.msg || ''; }).join(' ');
+                throw new Error(errMsg);
               }
 
-              setMessage("<p>Thank you! We received your submission.</p>", true);
+              var thankYou = 'Thank you! We received your submission.';
+              if (data.confirmation_email_sent === false) {
+                thankYou +=
+                  ' We saved your details, but a confirmation email could not be sent (check email service configuration).';
+              }
+
+              setMessage('<p>' + thankYou + '</p>', true);
+              showPopup(thankYou, true);
               form.reset();
             } catch (err) {
-              setMessage("<p>Sorry — we could not submit the form right now. Please try again.</p>", false);
+              var failMsg =
+                err && err.message
+                  ? err.message
+                  : 'Sorry — we could not submit the form right now. Please try again.';
+              setMessage('<p>' + failMsg + '</p>', false);
+              showPopup(failMsg, false);
             } finally {
               if (submitBtn) submitBtn.disabled = false;
             }

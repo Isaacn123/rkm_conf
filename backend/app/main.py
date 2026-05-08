@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -21,10 +22,12 @@ BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "")
 BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "RKMConf")
 ADMIN_NOTIFY_EMAIL = os.getenv("ADMIN_NOTIFY_EMAIL", "church@robertkayanjaministries.ug")
 
+logger = logging.getLogger(__name__)
 
-def _brevo_send_email(*, to_email: str, to_name: str, subject: str, html: str) -> None:
+
+def _brevo_send_email(*, to_email: str, to_name: str, subject: str, html: str) -> bool:
     if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
-        return
+        return False
 
     resp = requests.post(
         "https://api.brevo.com/v3/smtp/email",
@@ -43,6 +46,7 @@ def _brevo_send_email(*, to_email: str, to_name: str, subject: str, html: str) -
     )
     if resp.status_code >= 400:
         raise RuntimeError(f"Brevo send failed: {resp.status_code}")
+    return True
 
 
 def _format_admin_email(*, payload: "FormSubmission") -> str:
@@ -188,25 +192,34 @@ def submit(payload: FormSubmission) -> dict[str, Any]:
             )
             cur.close()
 
-        # Send notifications (non-blocking for persistence: failures won't reject submission)
-        try:
-            if ADMIN_NOTIFY_EMAIL:
-                _brevo_send_email(
-                    to_email=ADMIN_NOTIFY_EMAIL,
-                    to_name="Admin",
-                    subject="New RKMConf submission",
-                    html=_format_admin_email(payload=payload),
-                )
-            _brevo_send_email(
-                to_email=payload.email.strip().lower(),
-                to_name=f"{payload.fname.strip()} {payload.lname.strip()}".strip(),
-                subject="RKMConf: We received your submission",
-                html=_format_visitor_email(payload=payload),
+        # Transactional email (Brevo). Misconfiguration or API errors must not roll back DB insert.
+        confirmation_email_sent = False
+        if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
+            logger.warning(
+                "Brevo not configured (set BREVO_API_KEY and BREVO_SENDER_EMAIL); skipping emails"
             )
-        except Exception:
-            pass
+        else:
+            if ADMIN_NOTIFY_EMAIL:
+                try:
+                    _brevo_send_email(
+                        to_email=ADMIN_NOTIFY_EMAIL,
+                        to_name="Admin",
+                        subject="New RKMConf submission",
+                        html=_format_admin_email(payload=payload),
+                    )
+                except Exception:
+                    logger.exception("Admin notification email failed")
+            try:
+                confirmation_email_sent = _brevo_send_email(
+                    to_email=payload.email.strip().lower(),
+                    to_name=f"{payload.fname.strip()} {payload.lname.strip()}".strip(),
+                    subject="RKMConf: We received your submission",
+                    html=_format_visitor_email(payload=payload),
+                )
+            except Exception:
+                logger.exception("Visitor confirmation email failed")
 
-        return {"ok": True}
+        return {"ok": True, "confirmation_email_sent": confirmation_email_sent}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to save submission") from e
 
