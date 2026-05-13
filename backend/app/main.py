@@ -51,7 +51,7 @@ def _email_layout(*, header_subtitle: str, body_html: str, footer_html: str) -> 
       <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);">
         <tr>
           <td style="background:#1e293b;padding:22px 28px;border-bottom:3px solid #0f172a;">
-            <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:600;color:#f8fafc;letter-spacing:.02em;">RKMConf</p>
+            <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:21px;font-weight:600;color:#f8fafc;letter-spacing:.02em;">Robert Kayanja Ministries Conference(THE BIG FIX)</p>
             <p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;line-height:1.45;">{sub}</p>
           </td>
         </tr>
@@ -137,7 +137,7 @@ def _format_admin_email(*, payload: "FormSubmission", submitted_at_utc: datetime
 
     body = f"""
 <p style="margin:0 0 20px;font-size:15px;color:#111827;">
-  A new registration has been submitted through the RKMConf website form. Please review the details below and follow up as appropriate.
+  A new registration has been submitted through the Robert Kayanja Ministries Conference website form. Please review the details below and follow up as appropriate.
 </p>
 {details}
 <p style="margin:22px 0 8px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Additional message</p>
@@ -178,7 +178,7 @@ def _format_visitor_email(*, payload: "FormSubmission", submitted_at_utc: dateti
     body = f"""
 <p style="margin:0 0 14px;font-size:15px;color:#111827;">Dear {first},</p>
 <p style="margin:0 0 16px;font-size:15px;color:#374151;">
-  Thank you for submitting your registration details for <strong style="color:#111827;">RKMConf</strong>.
+  Thank you for submitting your registration details for <strong style="color:#111827;">Robert Kayanja Ministries Conference(THE BIG FIX)</strong>.
   We have received your information securely and will retain it for conference planning and correspondence.
 </p>
 <p style="margin:0 0 22px;font-size:15px;color:#374151;">
@@ -191,12 +191,12 @@ def _format_visitor_email(*, payload: "FormSubmission", submitted_at_utc: dateti
 </p>
 <p style="margin:24px 0 0;font-size:15px;color:#111827;">
   Kind regards,<br/>
-  <span style="color:#374151;">The RKMConf team</span>
+  <span style="color:#374151;">The Robert Kayanja Ministries Conference team</span>
 </p>
 """
 
     footer = """
-<p style="margin:0 0 8px;">You received this email because you completed the registration form on the RKMConf website.</p>
+<p style="margin:0 0 8px;">You received this email because you completed the registration form on the Robert Kayanja Ministries Conference website.</p>
 <p style="margin:0;">If you did not submit this request, please disregard this message or contact us using the details on our official site.</p>
 """
     return _email_layout(
@@ -324,7 +324,7 @@ def submit(payload: FormSubmission) -> dict[str, Any]:
                     _brevo_send_email(
                         to_email=ADMIN_NOTIFY_EMAIL,
                         to_name="Admin",
-                        subject="RKMConf — New registration submitted",
+                        subject="Robert Kayanja Ministries Conference — New registration submitted",
                         html=_format_admin_email(payload=payload, submitted_at_utc=created_at),
                     )
                 except Exception:
@@ -333,7 +333,7 @@ def submit(payload: FormSubmission) -> dict[str, Any]:
                 confirmation_email_sent = _brevo_send_email(
                     to_email=payload.email.strip().lower(),
                     to_name=f"{payload.fname.strip()} {payload.lname.strip()}".strip(),
-                    subject="RKMConf — Registration received",
+                    subject="Robert Kaynja Ministries Conference — Registration received",
                     html=_format_visitor_email(payload=payload, submitted_at_utc=created_at),
                 )
             except Exception:
