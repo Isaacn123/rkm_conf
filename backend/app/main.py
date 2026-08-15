@@ -164,6 +164,7 @@ def _format_visitor_email(*, payload: "FormSubmission", submitted_at_utc: dateti
     email_disp = _escape_line(payload.email.strip().lower())
     phone_disp = f"{_escape_line(payload.phoneCountry.strip().upper())} {_escape_line(payload.phone.strip())}"
     days_disp = _escape_line(payload.daysAttendance.strip())
+    
 
     details = "".join(
         [
