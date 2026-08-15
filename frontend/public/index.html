@@ -37,8 +37,11 @@
 <script>document.documentElement.classList.add('wf-loading')</script>
 <style>@keyframes fonts-loading { 0%, 99% { color: transparent; } } html.wf-loading * { animation: fonts-loading 3s; }</style>
 <style>
-  /* Hide unused video skip indicators (no local video) */
-  .video-player__navigation-indicators { display: none !important; }
+  /* Hide unused video skip indicators and load-error overlay (no local video) */
+  .video-player__navigation-indicators,
+  .video-player__error,
+  .video-player__error-message,
+  .sqs-video-background-native .video-player__error { display: none !important; }
 </style>
 <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700"><script type="text/javascript" crossorigin="anonymous" defer="true" nomodule="nomodule" src="assets/assets.squarespace.com/%40sqs/polyfiller/1.6/legacy.js"></script>
@@ -1170,6 +1173,8 @@
     
       
         
+          <!-- Hidden: hero background video is not available locally -->
+          <!--
           <div data-controller="VideoBackgroundNative">
             <div
   class="sqs-video-background-native content-fill"
@@ -1221,6 +1226,7 @@
 </div>
 
           </div>
+          -->
         
       
     
@@ -1847,7 +1853,7 @@
   data-sqsp-image-block-image
   alt=""
   data-licensed-asset-preview="false"
-  data-load="false" elementtiming="system-image-block" src="images/4919f129-2a97-4bc4-b0c6-cb8e7da835ee_3.png" width="640" height="312" alt="" sizes="(max-width: 640px) 100vw, (max-width: 767px) 100vw, 66.66666666666666vw" style="display:block;object-position: var(--image-component-focal-point);object-fit: var(--image-component-object-fit);" loading="lazy" decoding="async" data-loader="sqs">
+  data-load="false" elementtiming="system-image-block" src="images/4919f129-2a97-4bc4-b0c6-cb8e7da835ee_3.png" width="640" height="312" alt="21st to 27th September 2026" sizes="(max-width: 640px) 100vw, (max-width: 767px) 100vw, 66.66666666666666vw" style="display:block;object-position: var(--image-component-focal-point);object-fit: var(--image-component-object-fit);" loading="lazy" decoding="async" data-loader="sqs">
   
   <div class="fluidImageOverlay"></div>
 
