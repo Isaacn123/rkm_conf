@@ -8120,6 +8120,12 @@
           gap: 24px;
         }
 
+        @media (max-width: 767px) {
+          #block-yui_3_17_2_1_1777457525816_11622 fieldset.form-item.name {
+            grid-template-columns: 1fr;
+          }
+        }
+
         /* Put Country + Number next to each other (desktop) */
         #block-yui_3_17_2_1_1777457525816_11622 fieldset.form-item.phone {
           display: grid;
@@ -8129,51 +8135,9 @@
         }
 
         @media (max-width: 767px) {
-          .fe-block-yui_3_17_2_1_1777457525816_11622 {
-            grid-column: 1 / -1 !important;
-            min-width: 0 !important;
-            max-width: 100% !important;
-          }
-
-          #block-yui_3_17_2_1_1777457525816_11622 {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-
-          #block-yui_3_17_2_1_1777457525816_11622 fieldset.form-item.name,
           #block-yui_3_17_2_1_1777457525816_11622 fieldset.form-item.phone {
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
+            grid-template-columns: 1fr;
           }
-
-          #block-yui_3_17_2_1_1777457525816_11622 .form-wrapper {
-            padding: 16px 12px 28px !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            overflow-x: hidden !important;
-          }
-
-          #block-yui_3_17_2_1_1777457525816_11622 .field-list,
-          #block-yui_3_17_2_1_1777457525816_11622 .form-item,
-          #block-yui_3_17_2_1_1777457525816_11622 .field {
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-          }
-
-          #block-yui_3_17_2_1_1777457525816_11622 .rkmconf-phone-wrap .iti input[type="tel"],
-          #block-yui_3_17_2_1_1777457525816_11622 .rkmconf-phone-wrap .iti input.iti__tel-input[type="tel"] {
-            padding-left: 102px !important;
-          }
-
-          #block-yui_3_17_2_1_1777457525816_11622 .form-button-wrapper,
-          #block-yui_3_17_2_1_1777457525816_11622 .form-button-wrapper button.form-submit-button {
-            width: 100% !important;
-          }
-        }
-
-        .iti--container {
-          max-width: calc(100vw - 24px) !important;
         }
 
         #block-yui_3_17_2_1_1777457525816_11622 fieldset.form-item.phone legend {
@@ -8239,6 +8203,62 @@
         #block-yui_3_17_2_1_1777457525816_11622 .form-button-wrapper button.form-submit-button:focus-visible {
           outline: 0;
           box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.35) !important;
+        }
+
+        #block-yui_3_17_2_1_1777457525816_11622,
+        #block-yui_3_17_2_1_1777457525816_11622 .sqs-block-content,
+        #block-yui_3_17_2_1_1777457525816_11622 .form-wrapper,
+        #block-yui_3_17_2_1_1777457525816_11622 .react-form-contents,
+        #block-yui_3_17_2_1_1777457525816_11622 .field-list,
+        #block-yui_3_17_2_1_1777457525816_11622 .form-item,
+        #block-yui_3_17_2_1_1777457525816_11622 .field {
+          max-width: 100% !important;
+          min-width: 0 !important;
+          box-sizing: border-box !important;
+        }
+
+        #block-yui_3_17_2_1_1777457525816_11622 .field {
+          width: 100% !important;
+          float: none !important;
+        }
+
+        @media (max-width: 767px) {
+          #block-yui_3_17_2_1_1777457525816_11622 .form-wrapper {
+            padding: 16px 14px 28px !important;
+            overflow-x: hidden;
+          }
+
+          #block-yui_3_17_2_1_1777457525816_11622 fieldset.form-item.name,
+          #block-yui_3_17_2_1_1777457525816_11622 fieldset.form-item.phone {
+            display: flex !important;
+            flex-direction: column !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+
+          #block-yui_3_17_2_1_1777457525816_11622 .form-button-wrapper,
+          #block-yui_3_17_2_1_1777457525816_11622 .form-button-wrapper button.form-submit-button {
+            width: 100% !important;
+          }
+
+          #block-yui_3_17_2_1_1777457525816_11622 select {
+            white-space: normal;
+          }
+
+          #block-yui_3_17_2_1_1777457525816_11622 .rkmconf-phone-wrap .iti {
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+
+          #block-yui_3_17_2_1_1777457525816_11622 .rkmconf-phone-wrap .iti input[type="tel"],
+          #block-yui_3_17_2_1_1777457525816_11622 .rkmconf-phone-wrap .iti input.iti__tel-input[type="tel"] {
+            padding-left: 102px !important;
+          }
+        }
+
+        .iti--container {
+          max-width: calc(100vw - 16px) !important;
+          z-index: 2147483646 !important;
         }
 
         /* (Removed) inner span label override */
